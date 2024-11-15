@@ -2,13 +2,16 @@ package study.querydsl.repository;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.support.PageableExecutionUtils;
 import study.querydsl.dto.MemberSearchCondition;
 import study.querydsl.dto.MemberTeamDto;
 import study.querydsl.dto.QMemberTeamDto;
+import study.querydsl.entity.Member;
 
 import java.util.List;
 
@@ -105,7 +108,22 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
 
         //내가 직접 카운트 쿼리를 날림
         //simple버전보다 장점: 카운트쿼리 최적화가능(join필요없을 때도), 카운트 없을때 컨텐츠 쿼리 안 보내기 등 최적화 좋음
-        long total = queryFactory
+//        long total = queryFactory
+//                .select(member)
+//                .from(member)
+//                .leftJoin(member.team, team)
+//                .where(
+//                        usernameEq(condition.getUsername()),
+//                        teamNameEq(condition.getTeamName()),
+//                        ageGoe(condition.getAgeGoe()),
+//                        ageLoe(condition.getAgeLoe())
+//                )
+//                .fetchCount();
+
+//        return new PageImpl<>(content, pageable, total);
+
+        //[페이징 활용2-CountQuery 최적화]
+        JPAQuery<Member> countQuery = queryFactory
                 .select(member)
                 .from(member)
                 .leftJoin(member.team, team)
@@ -114,11 +132,12 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
                         teamNameEq(condition.getTeamName()),
                         ageGoe(condition.getAgeGoe()),
                         ageLoe(condition.getAgeLoe())
-                )
-                .fetchCount();
+                );
 
-        return new PageImpl<>(content, pageable, total);
+        return PageableExecutionUtils.getPage(content, pageable, () -> countQuery.fetchCount());
     }
+
+
 
     private BooleanExpression usernameEq(String username) {
         return hasText(username) ?  member.username.eq(username) : null;
