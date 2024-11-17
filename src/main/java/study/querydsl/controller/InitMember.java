@@ -13,7 +13,7 @@ import study.querydsl.entity.Team;
 @Profile("local")
 @Component
 @RequiredArgsConstructor
-public class InitMemeber {
+public class InitMember {
     private final InitMemberService initMemberService;
 
     @PostConstruct
@@ -37,7 +37,6 @@ public class InitMemeber {
                 Team selectedTeam = i % 2 == 0 ? teamA : teamB;
                 em.persist(new Member("member" + i, i, selectedTeam));
             }
-
         }
     }
 }

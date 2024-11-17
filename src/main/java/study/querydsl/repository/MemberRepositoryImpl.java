@@ -200,4 +200,10 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
         return ageLoe != null ? member.age.loe(ageLoe) : null;
     }
 
+    private BooleanExpression customizedCondition(String username, String teamName, Integer ageGoe, Integer ageLoe) {
+        //TODO: and(null)이면 NPE 발생할 수 있기에 방어코드 필요
+        //자주 쓰이는 조건 조합이 있을 경우에는 이런식으로 쓸 수 있을듯
+
+        return usernameEq(username).and(teamNameEq(teamName)).and(ageGoe(ageGoe)).and(ageLoe(ageLoe));
+    }
 }
