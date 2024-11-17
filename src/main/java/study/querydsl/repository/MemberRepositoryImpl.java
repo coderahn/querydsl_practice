@@ -2,6 +2,7 @@ package study.querydsl.repository;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Wildcard;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import org.springframework.data.domain.Page;
@@ -135,6 +136,50 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom{
                 );
 
         return PageableExecutionUtils.getPage(content, pageable, () -> countQuery.fetchCount());
+    }
+
+    /**
+     * fetchResult(), fetchCount() => deprecate로 인한 수정
+     * @param condition
+     * @param pageable
+     * @return
+     */
+    @Override
+    public Page<MemberTeamDto> searchPageComplexNew(MemberSearchCondition condition, Pageable pageable) {
+        List<MemberTeamDto> content = queryFactory
+                .select(
+                        //@QueryProjection을 통한 성능최적화
+                        new QMemberTeamDto(
+                                member.id.as("memberId"),
+                                member.username,
+                                member.age,
+                                team.id.as("teamId"),
+                                team.name.as("teamName")))
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(//재사용성이 좋음(조립가능)
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe()))
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetch();//컨텐츠용쿼리, 카운트쿼리 2개 날림
+
+        //fetchCount() deprecate로 인한 방법
+        JPAQuery<Long> count = queryFactory
+                .select(Wildcard.count)
+                //.select(member.count())
+                .from(member)
+                .leftJoin(member.team, team)
+                .where(
+                        usernameEq(condition.getUsername()),
+                        teamNameEq(condition.getTeamName()),
+                        ageGoe(condition.getAgeGoe()),
+                        ageLoe(condition.getAgeLoe())
+                );
+
+        return PageableExecutionUtils.getPage(content, pageable, () -> count.fetchOne());
     }
 
 
